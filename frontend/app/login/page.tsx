@@ -14,7 +14,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:8000/api/v1/auth/login", {
+      const res = await axios.post("https://route53-clone-z4m4.onrender.com/api/v1/auth/login", {
         username: username,
         password: password
       });
