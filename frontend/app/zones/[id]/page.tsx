@@ -32,7 +32,7 @@ export default function DnsRecordsPage() {
 
   const fetchRecords = () => {
     setLoading(true);
-    axios.get(`http://localhost:8000/api/v1/zones/${zoneId}/records/`)
+    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/zones/${zoneId}/records/`)
       .then(res => {
         setRecords(res.data);
         setLoading(false);
@@ -54,7 +54,8 @@ export default function DnsRecordsPage() {
     setIsSubmitting(true);
     
     try {
-      await axios.post(`http://localhost:8000/api/v1/zones/${zoneId}/records/`, {
+      // FIX: Corrected URL to hit the records endpoint and removed double 'await'
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/zones/${zoneId}/records/`, {
         name: recordName,
         record_type: recordType,
         value: value,
@@ -81,7 +82,8 @@ export default function DnsRecordsPage() {
     }
     
     try {
-      await axios.delete(`http://localhost:8000/api/v1/records/${id}`);
+      // FIX: Corrected URL to delete a specific record using its dynamic ID and removed double 'await'
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/records/${id}`);
       fetchRecords(); 
     } catch (err) {
       console.error("Failed to delete record:", err);

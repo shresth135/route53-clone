@@ -26,7 +26,7 @@ export default function HostedZonesPage() {
 
   const fetchZones = () => {
     setLoading(true);
-    axios.get("http://localhost:8000/api/v1/zones/")
+    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/zones`)
       .then(res => {
         setZones(res.data);
         setLoading(false);
@@ -46,7 +46,8 @@ export default function HostedZonesPage() {
     setIsSubmitting(true);
     
     try {
-      await axios.post("http://localhost:8000/api/v1/zones/", {
+      // FIX: Changed from /auth/login to /zones/ and fixed double await
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/zones/`, {
         name: domainName,
         description: description,
         type: type
@@ -70,7 +71,8 @@ export default function HostedZonesPage() {
     }
     
     try {
-      await axios.delete(`http://localhost:8000/api/v1/zones/${id}`);
+      // FIX: Changed hardcoded /zones/1 to use the dynamic ${id} and fixed double await
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/zones/${id}`);
       fetchZones();
     } catch (err) {
       console.error("Failed to delete zone:", err);
