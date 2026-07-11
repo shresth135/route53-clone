@@ -10,7 +10,6 @@ app = FastAPI(title="Route53 Clone API")
 
 app.add_middleware(
     CORSMiddleware,
-    # Added your live Vercel URL here
     allow_origins=["http://localhost:3000", "https://route53-clone-beryl.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],

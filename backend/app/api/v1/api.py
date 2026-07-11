@@ -16,7 +16,6 @@ class LoginRequest(BaseModel):
 
 @router.post("/auth/login")
 async def login(request: Request, credentials: LoginRequest):
-    # This will print the raw data to your terminal so we can see why it's failing
     print("DEBUG - Raw request body:", await request.body())
     print("DEBUG - Parsed credentials:", credentials.username, credentials.password)
     
