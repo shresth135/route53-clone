@@ -46,7 +46,6 @@ export default function HostedZonesPage() {
     setIsSubmitting(true);
     
     try {
-      // FIX: Changed from /auth/login to /zones/ and fixed double await
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/zones/`, {
         name: domainName,
         description: description,
@@ -71,7 +70,6 @@ export default function HostedZonesPage() {
     }
     
     try {
-      // FIX: Changed hardcoded /zones/1 to use the dynamic ${id} and fixed double await
       await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/zones/${id}`);
       fetchZones();
     } catch (err) {
