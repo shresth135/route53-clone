@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { Search, RefreshCw, Plus, X, Trash2 } from "lucide-react";
+import { Search, RefreshCw, Plus, X, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface HostedZone {
   id: number;
@@ -16,13 +16,18 @@ export default function HostedZonesPage() {
   const [loading, setLoading] = useState(true);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingZoneId, setEditingZoneId] = useState<number | null>(null);
   
   const [domainName, setDomainName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("Public");
 
   const [searchTerm, setSearchTerm] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchZones = () => {
     setLoading(true);
@@ -41,6 +46,25 @@ export default function HostedZonesPage() {
     fetchZones();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const openCreateModal = () => {
+    setDomainName("");
+    setDescription("");
+    setType("Public");
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (zone: HostedZone) => {
+    setEditingZoneId(zone.id);
+    setDomainName(zone.name);
+    setDescription(zone.description || "");
+    setType(zone.type);
+    setIsEditModalOpen(true);
+  };
+
   const handleCreateZone = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -52,13 +76,32 @@ export default function HostedZonesPage() {
         type: type
       });
       
-      setDomainName("");
-      setDescription("");
-      setType("Public");
       setIsModalOpen(false);
       fetchZones();
     } catch (err) {
       console.error("Failed to create zone:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateZone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingZoneId) return;
+    setIsSubmitting(true);
+    
+    try {
+      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/zones/${editingZoneId}`, {
+        name: domainName,
+        description: description,
+        type: type
+      });
+      
+      setIsEditModalOpen(false);
+      fetchZones();
+    } catch (err) {
+      console.error("Failed to update zone:", err);
+      alert("Failed to update zone.");
     } finally {
       setIsSubmitting(false);
     }
@@ -82,6 +125,10 @@ export default function HostedZonesPage() {
     zone.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalPages = Math.max(1, Math.ceil(filteredZones.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedZones = filteredZones.slice(startIndex, startIndex + itemsPerPage);
+
   return (
     <div className="max-w-6xl mx-auto relative">
       <div className="mb-6">
@@ -94,7 +141,7 @@ export default function HostedZonesPage() {
       <div className="bg-white border border-gray-300 rounded shadow-sm">
         <div className="p-4 border-b border-gray-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-t">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-gray-800">Hosted zones ({zones.length})</h2>
+            <h2 className="text-lg font-bold text-gray-800">Hosted zones ({filteredZones.length})</h2>
           </div>
           
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -112,7 +159,7 @@ export default function HostedZonesPage() {
               <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
             </button>
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={openCreateModal}
               className="bg-[#ff9900] hover:bg-[#e88b00] text-white px-4 py-1.5 font-bold rounded text-sm flex items-center gap-1 transition-colors"
             >
               <Plus size={16} /> Create hosted zone
@@ -127,7 +174,7 @@ export default function HostedZonesPage() {
                 <th className="p-3 font-bold">Domain name</th>
                 <th className="p-3 font-bold border-l border-gray-200">Type</th>
                 <th className="p-3 font-bold border-l border-gray-200">Description</th>
-                <th className="p-3 font-bold border-l border-gray-200 text-center w-20">Actions</th>
+                <th className="p-3 font-bold border-l border-gray-200 text-center w-32">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -135,14 +182,14 @@ export default function HostedZonesPage() {
                 <tr>
                   <td colSpan={4} className="p-8 text-center text-gray-500">Loading hosted zones...</td>
                 </tr>
-              ) : filteredZones.length === 0 ? (
+              ) : paginatedZones.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="p-8 text-center text-gray-500">
                     {searchTerm ? "No hosted zones match your search." : "No hosted zones found. Click \"Create hosted zone\" to get started."}
                   </td>
                 </tr>
               ) : (
-                filteredZones.map((zone) => (
+                paginatedZones.map((zone) => (
                   <tr key={zone.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                     <td className="p-3 font-medium">
                       <Link href={`/zones/${zone.id}`} className="text-[#0073bb] hover:underline cursor-pointer">
@@ -151,7 +198,13 @@ export default function HostedZonesPage() {
                     </td>
                     <td className="p-3 border-l border-gray-200 text-gray-700">{zone.type}</td>
                     <td className="p-3 border-l border-gray-200 text-gray-500">{zone.description || "-"}</td>
-                    <td className="p-3 border-l border-gray-200 text-center">
+                    <td className="p-3 border-l border-gray-200 text-center flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => openEditModal(zone)}
+                        className="text-[#0073bb] hover:text-[#005a93] font-medium text-sm px-2 py-1 transition-colors"
+                      >
+                        Edit
+                      </button>
                       <button 
                         onClick={() => handleDeleteZone(zone.id, zone.name)}
                         className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-colors"
@@ -166,25 +219,57 @@ export default function HostedZonesPage() {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="p-3 border-t border-gray-300 flex items-center justify-end gap-4 bg-gray-50">
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex gap-1">
+              <button 
+                type="button"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-white transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button 
+                type="button"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-white transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {isModalOpen && (
+      {(isModalOpen || isEditModalOpen) && (
         <div 
           className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity"
-          onClick={() => setIsModalOpen(false)}
+          onClick={() => { setIsModalOpen(false); setIsEditModalOpen(false); }}
         >
           <div 
             className="w-full max-w-lg bg-white rounded-lg shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
-              <h2 className="text-lg font-bold text-gray-900">Create hosted zone</h2>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-800">
+              <h2 className="text-lg font-bold text-gray-900">
+                {isEditModalOpen ? "Edit hosted zone" : "Create hosted zone"}
+              </h2>
+              <button 
+                type="button" 
+                onClick={() => { setIsModalOpen(false); setIsEditModalOpen(false); }} 
+                className="text-gray-500 hover:text-gray-800"
+              >
                 <X size={20} />
               </button>
             </div>
             
-            <form onSubmit={handleCreateZone} className="flex flex-col overflow-hidden">
+            <form onSubmit={isEditModalOpen ? handleUpdateZone : handleCreateZone} className="flex flex-col overflow-hidden">
               <div className="p-6 overflow-y-auto space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-1">
@@ -250,7 +335,7 @@ export default function HostedZonesPage() {
               <div className="p-4 border-t flex justify-end gap-3 bg-gray-50 rounded-b-lg">
                 <button 
                   type="button" 
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setIsEditModalOpen(false); }}
                   className="px-4 py-1.5 border border-gray-400 font-bold rounded hover:bg-gray-100 transition-colors"
                 >
                   Cancel
@@ -260,7 +345,7 @@ export default function HostedZonesPage() {
                   disabled={isSubmitting}
                   className="bg-[#ff9900] hover:bg-[#e88b00] text-white px-4 py-1.5 font-bold rounded transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? "Creating..." : "Create hosted zone"}
+                  {isSubmitting ? "Saving..." : (isEditModalOpen ? "Save changes" : "Create hosted zone")}
                 </button>
               </div>
             </form>

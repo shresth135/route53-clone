@@ -22,6 +22,7 @@ async def login(request: Request, credentials: LoginRequest):
     return {"access_token": "mock-token", "user": credentials.username}
 
 # Zones
+
 @router.post("/zones/", response_model=schemas.HostedZoneResponse)
 def create_zone(zone: schemas.HostedZoneCreate, db: Session = Depends(get_db)):
     return crud.create_zone(db=db, zone=zone)
@@ -30,6 +31,13 @@ def create_zone(zone: schemas.HostedZoneCreate, db: Session = Depends(get_db)):
 def read_zones(db: Session = Depends(get_db)):
     return crud.get_zones(db)
 
+@router.put("/zones/{zone_id}", response_model=schemas.HostedZoneResponse)
+def update_zone_endpoint(zone_id: int, zone: schemas.HostedZoneCreate, db: Session = Depends(get_db)):
+    updated_zone = crud.update_zone(db=db, zone_id=zone_id, zone_data=zone)
+    if not updated_zone:
+        raise HTTPException(status_code=404, detail="Zone not found")
+    return updated_zone
+
 @router.delete("/zones/{zone_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_zone_endpoint(zone_id: int, db: Session = Depends(get_db)):
     deleted = crud.delete_zone(db, zone_id)
@@ -37,7 +45,9 @@ def delete_zone_endpoint(zone_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Zone not found")
     return None
 
+
 # Records
+
 @router.post("/zones/{zone_id}/records/", response_model=schemas.DnsRecordResponse)
 def create_record(zone_id: int, record: schemas.DnsRecordCreate, db: Session = Depends(get_db)):
     return crud.create_record(db=db, record=record, zone_id=zone_id)
@@ -45,6 +55,13 @@ def create_record(zone_id: int, record: schemas.DnsRecordCreate, db: Session = D
 @router.get("/zones/{zone_id}/records/", response_model=List[schemas.DnsRecordResponse])
 def read_records(zone_id: int, db: Session = Depends(get_db)):
     return crud.get_records_by_zone(db, zone_id=zone_id)
+
+@router.put("/records/{record_id}", response_model=schemas.DnsRecordResponse)
+def update_record_endpoint(record_id: int, record: schemas.DnsRecordCreate, db: Session = Depends(get_db)):
+    updated_record = crud.update_record(db=db, record_id=record_id, record_data=record)
+    if not updated_record:
+        raise HTTPException(status_code=404, detail="Record not found")
+    return updated_record
 
 @router.delete("/records/{record_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_record_endpoint(record_id: int, db: Session = Depends(get_db)):

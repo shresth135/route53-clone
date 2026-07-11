@@ -27,7 +27,7 @@ Database:
 
 * Mock Authentication: Secure login flow with session persistence with localStorage. Restricts access to dashboard routes to unauthenticated systems.
 * Hosted Zones Management: Adding, finding, viewing, and removing domains as Zones.
-* DNS Records Management: Enter into specific zones and create, view, search and delete DNS records (A, AAAA, CNAME, TXT, MX).
+* DNS Records Management: Enter into specific zones and create, view, search and delete DNS records (A, AAAA, CNAME, TXT, MX, NS, PTR, SRV, CAA).
 * Real time Search and filtering on Hosted Zones and DNS Records.
 
 ## Local Setup Instructions:
@@ -71,9 +71,17 @@ It is a straightforward database, having two primary tables connected via a one-
 * `id`: Integer, Primary Key.
 * `zone_id`: Integer, Foreign Key (references `zones.id`).
 * `name`: String, the subdomain or apex you are creating the DNS record for.
-* `record_type`: String (A, AAAA, CNAME, TXT, or MX).
+* `record_type`: String (A, AAAA, CNAME, TXT, MX, NS, PTR, SRV, or CAA).
 * `value`: String (Target IP or Domain).
 * `ttl`: Integer (Time to live in seconds).
+
+## Mocked Sections
+The following sections are implemented as placeholders for the Route53 user experience:
+* Dashboard
+* Traffic Policies
+* Health Checks
+* Resolver
+* Profiles
 
 ## API Overview
 
@@ -81,6 +89,8 @@ On the backend, there is a full REST API. It was implemented with FastAPI, which
 
 **Live API Docs:** 
 https://route53-clone-z4m4.onrender.com/docs
+
+Note: The backend is hosted on the Render free tier, so the first API request may experience a "cold start" delay of up to 30 seconds.
 
 Below are the main endpoints included in this project:
 * `POST /api/v1/auth/login` - Handles the mock authentication step.

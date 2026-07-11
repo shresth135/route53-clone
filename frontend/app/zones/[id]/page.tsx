@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import { RefreshCw, Plus, ArrowLeft, X, Trash2, Search } from "lucide-react";
+import { RefreshCw, Plus, ArrowLeft, X, Trash2, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DnsRecord {
   id: number;
@@ -21,7 +21,9 @@ export default function DnsRecordsPage() {
   const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingRecordId, setEditingRecordId] = useState<number | null>(null);
 
   const [recordName, setRecordName] = useState("");
   const [recordType, setRecordType] = useState("A");
@@ -29,6 +31,9 @@ export default function DnsRecordsPage() {
   const [ttl, setTtl] = useState(300);
 
   const [searchTerm, setSearchTerm] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchRecords = () => {
     setLoading(true);
@@ -49,6 +54,27 @@ export default function DnsRecordsPage() {
     }
   }, [zoneId]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const openCreateModal = () => {
+    setRecordName("");
+    setRecordType("A");
+    setValue("");
+    setTtl(300);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (record: DnsRecord) => {
+    setEditingRecordId(record.id);
+    setRecordName(record.name || "");
+    setRecordType(record.record_type || "A");
+    setValue(record.value || "");
+    setTtl(record.ttl || 300);
+    setIsEditModalOpen(true);
+  };
+
   const handleCreateRecord = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -61,15 +87,33 @@ export default function DnsRecordsPage() {
         ttl: ttl
       });
       
-      setRecordName("");
-      setRecordType("A");
-      setValue("");
-      setTtl(300);
       setIsModalOpen(false);
-      
       fetchRecords();
     } catch (err) {
       console.error("Failed to create record:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateRecord = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRecordId) return;
+    setIsSubmitting(true);
+    
+    try {
+      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/records/${editingRecordId}`, {
+        name: recordName,
+        record_type: recordType,
+        value: value,
+        ttl: ttl
+      });
+      
+      setIsEditModalOpen(false);
+      fetchRecords();
+    } catch (err) {
+      console.error("Failed to update record:", err);
+      alert("Failed to update the record.");
     } finally {
       setIsSubmitting(false);
     }
@@ -90,9 +134,13 @@ export default function DnsRecordsPage() {
   };
 
   const filteredRecords = records.filter(record => 
-    record.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    record.value.toLowerCase().includes(searchTerm.toLowerCase())
+    (record.name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (record.value || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedRecords = filteredRecords.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="max-w-6xl mx-auto relative">
@@ -110,7 +158,7 @@ export default function DnsRecordsPage() {
       <div className="bg-white border border-gray-300 rounded shadow-sm">
         <div className="p-4 border-b border-gray-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-t">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-gray-800">Records ({records.length})</h2>
+            <h2 className="text-lg font-bold text-gray-800">Records ({filteredRecords.length})</h2>
           </div>
           
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -128,7 +176,7 @@ export default function DnsRecordsPage() {
               <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
             </button>
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={openCreateModal}
               className="bg-[#ff9900] hover:bg-[#e88b00] text-white px-4 py-1.5 font-bold rounded text-sm flex items-center gap-1"
             >
               <Plus size={16} /> Create record
@@ -144,7 +192,7 @@ export default function DnsRecordsPage() {
                 <th className="p-3 font-bold border-l border-gray-200">Type</th>
                 <th className="p-3 font-bold border-l border-gray-200">Value/Route traffic to</th>
                 <th className="p-3 font-bold border-l border-gray-200">TTL (seconds)</th>
-                <th className="p-3 font-bold border-l border-gray-200 text-center w-20">Actions</th>
+                <th className="p-3 font-bold border-l border-gray-200 text-center w-32">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -152,20 +200,26 @@ export default function DnsRecordsPage() {
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-gray-500">Loading records...</td>
                 </tr>
-              ) : filteredRecords.length === 0 ? (
+              ) : paginatedRecords.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-gray-500">
                     {searchTerm ? "No records match your search." : "No records found. Click \"Create record\" to add one."}
                   </td>
                 </tr>
               ) : (
-                filteredRecords.map((record) => (
+                paginatedRecords.map((record) => (
                   <tr key={record.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                     <td className="p-3 text-[#0073bb] font-medium">{record.name || "-"}</td>
                     <td className="p-3 border-l border-gray-200 text-gray-700">{record.record_type}</td>
                     <td className="p-3 border-l border-gray-200 text-gray-700 truncate max-w-xs">{record.value}</td>
                     <td className="p-3 border-l border-gray-200 text-gray-700">{record.ttl}</td>
-                    <td className="p-3 border-l border-gray-200 text-center">
+                    <td className="p-3 border-l border-gray-200 text-center flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => openEditModal(record)}
+                        className="text-[#0073bb] hover:text-[#005a93] font-medium text-sm px-2 py-1 transition-colors"
+                      >
+                        Edit
+                      </button>
                       <button 
                         onClick={() => handleDeleteRecord(record.id, record.name)}
                         className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-colors"
@@ -180,25 +234,57 @@ export default function DnsRecordsPage() {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="p-3 border-t border-gray-300 flex items-center justify-end gap-4 bg-gray-50">
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex gap-1">
+              <button 
+                type="button"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-white transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button 
+                type="button"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-white transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {isModalOpen && (
+      {(isModalOpen || isEditModalOpen) && (
         <div 
           className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity"
-          onClick={() => setIsModalOpen(false)}
+          onClick={() => { setIsModalOpen(false); setIsEditModalOpen(false); }}
         >
           <div 
             className="w-full max-w-lg bg-white rounded-lg shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
-              <h2 className="text-lg font-bold text-gray-900">Create record</h2>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-800">
+              <h2 className="text-lg font-bold text-gray-900">
+                {isEditModalOpen ? "Edit record" : "Create record"}
+              </h2>
+              <button 
+                type="button" 
+                onClick={() => { setIsModalOpen(false); setIsEditModalOpen(false); }} 
+                className="text-gray-500 hover:text-gray-800"
+              >
                 <X size={20} />
               </button>
             </div>
             
-            <form onSubmit={handleCreateRecord} className="flex flex-col overflow-hidden">
+            <form onSubmit={isEditModalOpen ? handleUpdateRecord : handleCreateRecord} className="flex flex-col overflow-hidden">
               <div className="p-6 overflow-y-auto space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-1">
@@ -226,6 +312,10 @@ export default function DnsRecordsPage() {
                     <option value="CNAME">CNAME - Routes traffic to another domain name and to some AWS resources</option>
                     <option value="TXT">TXT - Routes traffic to text strings</option>
                     <option value="MX">MX - Specifies mail servers</option>
+                    <option value="NS">NS - Name servers for a hosted zone</option>
+                    <option value="PTR">PTR - Maps an IP address to a hostname</option>
+                    <option value="SRV">SRV - Locates specific services</option>
+                    <option value="CAA">CAA - Restricts certificate authorities</option>
                   </select>
                 </div>
 
@@ -260,7 +350,7 @@ export default function DnsRecordsPage() {
               <div className="p-4 border-t flex justify-end gap-3 bg-gray-50 rounded-b-lg">
                 <button 
                   type="button" 
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setIsEditModalOpen(false); }}
                   className="px-4 py-1.5 border border-gray-400 font-bold rounded hover:bg-gray-100 transition-colors"
                 >
                   Cancel
@@ -270,7 +360,7 @@ export default function DnsRecordsPage() {
                   disabled={isSubmitting}
                   className="bg-[#ff9900] hover:bg-[#e88b00] text-white px-4 py-1.5 font-bold rounded transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? "Creating..." : "Create record"}
+                  {isSubmitting ? "Saving..." : (isEditModalOpen ? "Save changes" : "Create record")}
                 </button>
               </div>
             </form>

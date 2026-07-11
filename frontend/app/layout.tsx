@@ -64,8 +64,29 @@ export default function RootLayout({
             <div className="px-4 mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
               DNS Management
             </div>
+            
+            <Link href="/dashboard" className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-[#161d26]">
+              Dashboard
+            </Link>
+
             <Link href="/" className="block px-4 py-2 text-white bg-[#161d26] border-l-2 border-[#ff9900]">
               Hosted zones
+            </Link>
+            
+            <Link href="/traffic-policies" className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-[#161d26]">
+              Traffic policies
+            </Link>
+
+            <Link href="/health-checks" className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-[#161d26]">
+              Health checks
+            </Link>
+
+            <Link href="/resolver" className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-[#161d26]">
+              Resolver
+            </Link>
+
+            <Link href="/profiles" className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-[#161d26]">
+              Profiles
             </Link>
           </nav>
           
