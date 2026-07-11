@@ -54,7 +54,6 @@ export default function DnsRecordsPage() {
     setIsSubmitting(true);
     
     try {
-      // FIX: Corrected URL to hit the records endpoint and removed double 'await'
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/zones/${zoneId}/records/`, {
         name: recordName,
         record_type: recordType,
@@ -82,7 +81,6 @@ export default function DnsRecordsPage() {
     }
     
     try {
-      // FIX: Corrected URL to delete a specific record using its dynamic ID and removed double 'await'
       await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/records/${id}`);
       fetchRecords(); 
     } catch (err) {
