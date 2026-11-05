@@ -96,7 +96,9 @@ Below are the main endpoints included in this project:
 * `POST /api/v1/auth/login` - Handles the mock authentication step.
 * `GET /api/v1/zones/` - Retrieves a list of all hosted zones.
 * `POST /api/v1/zones/` - Creates a brand new hosted zone.
+* `PUT /api/v1/zones/{zone_id}` - Updates a hosted zone's name, description or type.
 * `DELETE /api/v1/zones/{zone_id}` - Deletes a particular hosted zone.
 * `GET /api/v1/zones/{zone_id}/records/` - Lists all DNS records in a given zone.
 * `POST /api/v1/zones/{zone_id}/records/` - Creates a new DNS record.
+* `PUT /api/v1/records/{record_id}` - Edits an existing DNS record.
 * `DELETE /api/v1/records/{record_id}` - Removes a specific DNS record.
