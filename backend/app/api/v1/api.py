@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
@@ -15,10 +15,7 @@ class LoginRequest(BaseModel):
     password: str
 
 @router.post("/auth/login")
-async def login(request: Request, credentials: LoginRequest):
-    print("DEBUG - Raw request body:", await request.body())
-    print("DEBUG - Parsed credentials:", credentials.username, credentials.password)
-    
+async def login(credentials: LoginRequest):
     return {"access_token": "mock-token", "user": credentials.username}
 
 # Zones
